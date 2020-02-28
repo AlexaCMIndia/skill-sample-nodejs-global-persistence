@@ -1,0 +1,355 @@
+{
+	"interactionModel": {
+		"languageModel": {
+			"invocationName": "global persistence demo",
+			"intents": [
+				{
+					"name": "AMAZON.CancelIntent",
+					"samples": []
+				},
+				{
+					"name": "AMAZON.HelpIntent",
+					"samples": []
+				},
+				{
+					"name": "AMAZON.StopIntent",
+					"samples": []
+				},
+				{
+					"name": "SetAttributeIntent",
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"samples": [
+								"it's {key}",
+								"the key is {key}",
+								"key {key}",
+								"okey {key}",
+								"all right {key}",
+								"{key}"
+							]
+						},
+						{
+							"name": "value",
+							"type": "AMAZON.Country",
+							"samples": [
+								"it's {value}",
+								"the country {value}",
+								"all right {value}",
+								"okey {value}",
+								"{value}"
+							]
+						}
+					],
+					"samples": [
+						"register {value} to {key}",
+						"register pair",
+						"set value {value}",
+						"value {value}",
+						"set key {key}",
+						"set a pair",
+						"set a value",
+						"assign {value} to {key}",
+						"match {key} with {value}",
+						"{key} equals {value}",
+						"set {value} for {key}",
+						"pair {key} {value}",
+						"key {key} value {value}",
+						"for {key} set {value}"
+					]
+				},
+				{
+					"name": "AMAZON.NavigateHomeIntent",
+					"samples": []
+				},
+				{
+					"name": "GetAttributeIntent",
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"samples": [
+								"it's {key}",
+								"the key is {key}",
+								"all right {key}",
+								"okey {key}",
+								"key {key}",
+								"{key}"
+							]
+						}
+					],
+					"samples": [
+						"find a value",
+						"get a value",
+						"fetch a value",
+						"tell me a value",
+						"give me a value",
+						"fetch value",
+						"find value",
+						"get value",
+						"query {key}",
+						"find {key}",
+						"give me {key}",
+						"code {key}",
+						"key {key}",
+						"fetch {key}",
+						"get {key}"
+					]
+				},
+				{
+					"name": "AMAZON.FallbackIntent",
+					"samples": []
+				},
+				{
+					"name": "DeleteAttributeIntent",
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"samples": [
+								"key {key}",
+								"the key is {key}",
+								"the digits are {key}",
+								"{key}"
+							]
+						}
+					],
+					"samples": [
+						"remove a value",
+						"delete a value",
+						"eliminate a value",
+						"discard a value",
+						"remove value",
+						"delete value",
+						"eliminate value",
+						"discard value",
+						"remove a key",
+						"delete a key",
+						"eliminate a key",
+						"discard a key",
+						"remove key",
+						"delete key",
+						"eliminate key",
+						"discard key",
+						"remove a pair",
+						"delete a pair",
+						"eliminate a pair",
+						"discard a pair",
+						"remove pair",
+						"delete pair",
+						"eliminate pair",
+						"discard pair",
+						"remove {key}",
+						"delete {key}",
+						"eliminate {key}",
+						"discard {key}",
+						"remove key {key}",
+						"delete key {key}",
+						"eliminate key {key}",
+						"discard key {key}",
+						"remove the key {key}",
+						"delete the key {key}",
+						"eliminate the key {key}",
+						"discard the key {key}"
+					]
+				}
+			],
+			"types": []
+		},
+		"dialog": {
+			"intents": [
+				{
+					"name": "SetAttributeIntent",
+					"confirmationRequired": true,
+					"prompts": {
+						"confirmation": "Confirm.Intent.22881561416"
+					},
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"elicitationRequired": true,
+							"confirmationRequired": false,
+							"prompts": {
+								"elicitation": "Elicit.Slot.22881561416.1546464456715"
+							},
+							"validations": [
+								{
+									"type": "isGreaterThanOrEqualTo",
+									"prompt": "Slot.Validation.461573702210.890266783786.745888534020",
+									"value": "0"
+								},
+								{
+									"type": "isLessThanOrEqualTo",
+									"prompt": "Slot.Validation.461573702210.890266783786.128131521422",
+									"value": "9999"
+								}
+							]
+						},
+						{
+							"name": "value",
+							"type": "AMAZON.Country",
+							"elicitationRequired": true,
+							"confirmationRequired": false,
+							"prompts": {
+								"elicitation": "Elicit.Slot.22881561416.103485729333"
+							}
+						}
+					]
+				},
+				{
+					"name": "GetAttributeIntent",
+					"confirmationRequired": false,
+					"prompts": {},
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"elicitationRequired": true,
+							"confirmationRequired": false,
+							"prompts": {
+								"elicitation": "Elicit.Slot.554346980114.1513789155758"
+							},
+							"validations": [
+								{
+									"type": "isGreaterThanOrEqualTo",
+									"prompt": "Slot.Validation.554346980114.1513789155758.784106537043",
+									"value": "0"
+								},
+								{
+									"type": "isLessThanOrEqualTo",
+									"prompt": "Slot.Validation.554346980114.1513789155758.1548591292593",
+									"value": "9999"
+								}
+							]
+						}
+					]
+				},
+				{
+					"name": "DeleteAttributeIntent",
+					"confirmationRequired": false,
+					"prompts": {},
+					"slots": [
+						{
+							"name": "key",
+							"type": "AMAZON.FOUR_DIGIT_NUMBER",
+							"elicitationRequired": true,
+							"confirmationRequired": true,
+							"prompts": {
+								"confirmation": "Confirm.Slot.814228627186.471212978356",
+								"elicitation": "Elicit.Slot.814228627186.471212978356"
+							}
+						}
+					]
+				}
+			],
+			"delegationStrategy": "ALWAYS"
+		},
+		"prompts": [
+			{
+				"id": "Elicit.Slot.22881561416.1546464456715",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Value set as {value} . Now please tell me a four digit sequence which will be used as key"
+					},
+					{
+						"type": "PlainText",
+						"value": "Please tell me a four digit sequence which I will use as key for the pair"
+					}
+				]
+			},
+			{
+				"id": "Elicit.Slot.22881561416.103485729333",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Key set as {key} . Now please tell me a country which will be used as value"
+					},
+					{
+						"type": "PlainText",
+						"value": "Please tell me a country which I will use as value for the pair"
+					}
+				]
+			},
+			{
+				"id": "Confirm.Intent.22881561416",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "The key {key} will be assigned the value {value} . Do you confirm?"
+					},
+					{
+						"type": "PlainText",
+						"value": "Ok. I will assign the value {value} to the key {key} . Is that all right?"
+					}
+				]
+			},
+			{
+				"id": "Slot.Validation.461573702210.890266783786.745888534020",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Please say four integer and positive digits, one by one"
+					}
+				]
+			},
+			{
+				"id": "Slot.Validation.461573702210.890266783786.128131521422",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Please say four integer and positive digits, one by one"
+					}
+				]
+			},
+			{
+				"id": "Elicit.Slot.554346980114.1513789155758",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Please tell me the four digit key and I will tell you the assigned value"
+					}
+				]
+			},
+			{
+				"id": "Slot.Validation.554346980114.1513789155758.784106537043",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Please say four positive digits in sequence"
+					}
+				]
+			},
+			{
+				"id": "Slot.Validation.554346980114.1513789155758.1548591292593",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Please say four positive digits in sequence"
+					}
+				]
+			},
+			{
+				"id": "Elicit.Slot.814228627186.471212978356",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Okey. Please tell me the four digit key of the element you want to remove"
+					}
+				]
+			},
+			{
+				"id": "Confirm.Slot.814228627186.471212978356",
+				"variations": [
+					{
+						"type": "PlainText",
+						"value": "Are you sure you want to eliminate item {key} ?"
+					}
+				]
+			}
+		]
+	},
+	"version": "4"
+}
