@@ -1,4 +1,4 @@
-# Global scope Persistence in Alexa Skills passing a Key Generator to a Persistence Adapter
+# Global scope persistence in Alexa Skills
 <img src="https://m.media-amazon.com/images/G/01/mobile-apps/dex/alexa/alexa-skills-kit/tutorials/fact/header._TTH_.png" />
 
 By default our DynamoDB and S3 persistence adapters use the userId as primary key for storage. Because of this, all stored attributes have local scope (user scope). In this example we show how to ocassionally pass a key generator function to the adapter that returns the applicationId (aka skillId) as primary key so some sttributes are stored in global (skill) scope.
