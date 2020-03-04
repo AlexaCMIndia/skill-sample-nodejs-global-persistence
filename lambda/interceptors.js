@@ -6,7 +6,7 @@ const LoadRequestInterceptor = {
     async process(handlerInput) {
         if (handlerInput.requestEnvelope.session['new']) {
             const globalPersistenceAdapter = persistence.getPersistenceAdapter(true);
-            const localPersistenceAdapter = persistence.getPersistenceAdapter();
+            const localPersistenceAdapter = persistence.getPersistenceAdapter(false);
             let globalAttributes = await globalPersistenceAdapter.getAttributes(handlerInput.requestEnvelope);
             globalAttributes = globalAttributes || {};
             console.log('Loaded global attributes: ' + JSON.stringify(globalAttributes));
@@ -36,7 +36,7 @@ const SaveResponseInterceptor = {
             const globalAttributes = sessionAttributes['global'];
             console.log('Saving global attributes: ' + JSON.stringify(globalAttributes));
             const globalPersistenceAdapter = persistence.getPersistenceAdapter(true);
-            const localPersistenceAdapter = persistence.getPersistenceAdapter();
+            const localPersistenceAdapter = persistence.getPersistenceAdapter(false);
             await globalPersistenceAdapter.saveAttributes(handlerInput.requestEnvelope, globalAttributes);
             await localPersistenceAdapter.saveAttributes(handlerInput.requestEnvelope, localAttributes);
         }
