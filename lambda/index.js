@@ -39,10 +39,16 @@ const LaunchRequestHandler = {
     async handle(handlerInput) {
         const { requestEnvelope } = handlerInput;
 
-        const record = await database().get(appId(requestEnvelope)); // global attributes
+        let record = await database().get(appId(requestEnvelope)); // global attributes
+        if(!record || !record.attributes){
+          const Model = database();
+          let attributes = {};
+          attributes.launchCount = 0;
+          record = new Model({id: appId(requestEnvelope), attributes: attributes});
+        }
         console.log(JSON.stringify(record));
-        const speechText = `Welcome to the <say-as interpret-as="ordinal">` + record.attributes.launchCount + '</say-as> global launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
         record.attributes.launchCount++;
+        const speechText = `Welcome to the <say-as interpret-as="ordinal">` + record.attributes.launchCount + '</say-as> global launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
         await record.save();
         return handlerInput.responseBuilder
             .speak(speechText)
@@ -66,7 +72,7 @@ const GetAttributeIntentHandler = {
         console.log(JSON.stringify(record));
 
         let speechText;
-        if (key && record.attributes[key]) {
+        if (key && record && record.attributes[key]) {
             speechText = 'The value assigned to <say-as interpret-as="digits">' + key + '</say-as> is ' + record.attributes[key] + '.';
         } else {
             speechText = 'Sorry, there\'s no value assigned to that key yet.';
@@ -97,7 +103,7 @@ const SetAttributeIntentHandler = {
         let speechText;
         if (key && value && intent.confirmationStatus !== 'DENIED') {
             let record = await database().get(userId(requestEnvelope)); // local attributes
-            if(!record){
+            if(!record || !record.attributes){
                 const Model = database();
                 let attributes = {};
                 attributes[key] = value;
