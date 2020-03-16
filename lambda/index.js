@@ -2,20 +2,48 @@
 /* eslint-disable  no-console */
 
 const Alexa = require('ask-sdk-core');
-const interceptors = require('./interceptors');
+const dynamoose = require('dynamoose');
+const persistence = require('./persistence');
+
+const DYNAMO_DB_TABLE_NAME = 'data';
+const DYNAMO_DB_AWS_REGION = 'eu-west-1';
+
+function userId(requestEnvelope){
+    return persistence.userIdKeyGenerator(requestEnvelope);
+}
+
+function appId(requestEnvelope){
+    return persistence.applicationIdKeyGenerator(requestEnvelope);
+}
+
+function config(){
+    dynamoose.AWS.config.update({
+        region: DYNAMO_DB_AWS_REGION
+    });
+    dynamoose.ddb();
+}
+
+function database(){
+    config();
+    return dynamoose.model(
+        DYNAMO_DB_TABLE_NAME, 
+        {id: String, attributes: Map},
+        {useDocumentTypes: true, saveUnknown: true}
+    );
+}
 
 const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
-    handle(handlerInput) {
-        const { attributesManager } = handlerInput;
-        const attributes = attributesManager.getSessionAttributes();
-        const globalAttributes = attributes['global'];
-        const launchCount = globalAttributes['launchCount'] || 0;
+    async handle(handlerInput) {
+        const { requestEnvelope } = handlerInput;
 
-        const speechText = `Welcome to the <say-as interpret-as="ordinal">` + launchCount + '</say-as> global launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
-
+        const record = await database().get(appId(requestEnvelope)); // global attributes
+        console.log(JSON.stringify(record));
+        const speechText = `Welcome to the <say-as interpret-as="ordinal">` + record.attributes.launchCount + '</say-as> global launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
+        record.attributes.launchCount++;
+        await record.save();
         return handlerInput.responseBuilder
             .speak(speechText)
             .reprompt(speechText)
@@ -28,19 +56,18 @@ const GetAttributeIntentHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'GetAttributeIntent';
     },
-    handle(handlerInput) {
-        const { attributesManager, requestEnvelope } = handlerInput;
-        const { request } = requestEnvelope;
-        const intent = request.intent;
+    async handle(handlerInput) {
+        const { requestEnvelope } = handlerInput;
 
         let key = Alexa.getSlotValue(requestEnvelope, 'key');
         key = key ? key.padStart(4, '0') : null;
 
+        const record = await database().get(userId(requestEnvelope)); // local attributes
+        console.log(JSON.stringify(record));
+
         let speechText;
-        const attributes = attributesManager.getSessionAttributes();
-        if (key && attributes['local'][key]) {
-            const value = attributes['local'][key];
-            speechText = 'The value assigned to <say-as interpret-as="digits">' + key + '</say-as> is ' + value + '.';
+        if (key && record.attributes[key]) {
+            speechText = 'The value assigned to <say-as interpret-as="digits">' + key + '</say-as> is ' + record.attributes[key] + '.';
         } else {
             speechText = 'Sorry, there\'s no value assigned to that key yet.';
         }
@@ -58,8 +85,8 @@ const SetAttributeIntentHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'SetAttributeIntent';
     },
-    handle(handlerInput) {
-        const { attributesManager, requestEnvelope } = handlerInput;
+    async handle(handlerInput) {
+        const { requestEnvelope } = handlerInput;
         const { request } = requestEnvelope;
         const intent = request.intent;
 
@@ -69,10 +96,20 @@ const SetAttributeIntentHandler = {
 
         let speechText;
         if (key && value && intent.confirmationStatus !== 'DENIED') {
-            let attributes = attributesManager.getSessionAttributes();
-            attributes['local'][key] = value;
-            attributesManager.setSessionAttributes(attributes);
-            speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> ' + value + ', registered and will be saved on exit.';
+            let record = await database().get(userId(requestEnvelope)); // local attributes
+            if(!record){
+                const Model = database();
+                let attributes = {};
+                attributes[key] = value;
+                record = new Model({id: userId(requestEnvelope), attributes: attributes});
+            } else {
+                record.attributes[key] = value;
+            }
+            console.log(JSON.stringify(record));
+            await record.save();
+
+            
+            speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> ' + value + ', has been saved.';
         } else {
             speechText = 'Ok. I won\'t register this pair.';
         }
@@ -89,20 +126,22 @@ const DeleteAttributeIntentHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'DeleteAttributeIntent';
     },
-    handle(handlerInput) {
-        const { attributesManager, requestEnvelope } = handlerInput;
+    async handle(handlerInput) {
+        const { requestEnvelope } = handlerInput;
         const { request } = requestEnvelope;
         const intent = request.intent;
 
         let key = Alexa.getSlotValue(requestEnvelope, 'key');
         key = key ? key.padStart(4, '0') : null;
 
+        const record = await database().get(userId(requestEnvelope)); // local attributes
+        console.log(JSON.stringify(record));
+
         let speechText;
-        let attributes = attributesManager.getSessionAttributes();
-        if (key && attributes['local'][key] && intent.confirmationStatus !== 'DENIED') {
-            delete attributes['local'][key];
-            attributesManager.setSessionAttributes(attributes);
-            speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> has been deleted and the new status will be saved on exit.';
+        if (key && record.attributes[key] && intent.confirmationStatus !== 'DENIED') {
+            delete record.attributes[key];
+            await record.save();
+            speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> has been deleted.';
         } else {
             if (intent.confirmationStatus === 'DENIED')
                 speechText = 'Ok, let\'s cancel that. You can now continue querying, registering or deleting key value pairs';
@@ -122,7 +161,7 @@ const HelpIntentHandler = {
         return handlerInput.requestEnvelope.request.type === 'IntentRequest'
             && handlerInput.requestEnvelope.request.intent.name === 'AMAZON.HelpIntent';
     },
-    handle(handlerInput) {
+    async handle(handlerInput) {
         const speechText = 'You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. Or you can just say register pair, get value or delete key';
 
         return handlerInput.responseBuilder
@@ -200,6 +239,6 @@ exports.handler = skillBuilder
         SessionEndedRequestHandler
     )
     .addErrorHandlers(ErrorHandler)
-    .addRequestInterceptors(interceptors.LoadRequestInterceptor)
-    .addResponseInterceptors(interceptors.SaveResponseInterceptor)
+    //.addRequestInterceptors(interceptors.LoadRequestInterceptor)
+    //.addResponseInterceptors(interceptors.SaveResponseInterceptor)
     .lambda();
