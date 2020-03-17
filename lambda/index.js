@@ -8,31 +8,31 @@ const persistence = require('./persistence');
 const DYNAMO_DB_TABLE_NAME = 'data';
 const DYNAMO_DB_AWS_REGION = 'eu-west-1';
 
-function userId(requestEnvelope){
+function userId(requestEnvelope) {
     return persistence.userIdKeyGenerator(requestEnvelope);
 }
 
-function appId(requestEnvelope){
+function appId(requestEnvelope) {
     return persistence.applicationIdKeyGenerator(requestEnvelope);
 }
 
-function config(){
+function config() {
     dynamoose.AWS.config.update({
         region: DYNAMO_DB_AWS_REGION
     });
     dynamoose.ddb();
 }
 
-function database(){
+function database() {
     config();
     return dynamoose.model(
-        DYNAMO_DB_TABLE_NAME, 
-        {id: String, attributes: Map},
-        {useDocumentTypes: true, saveUnknown: true}
+        DYNAMO_DB_TABLE_NAME,
+        { id: String, attributes: Map },
+        { useDocumentTypes: true, saveUnknown: true }
     );
 }
 
-const LaunchRequestHandler = {
+/*const LaunchRequestHandler = {
     canHandle(handlerInput) {
         return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
     },
@@ -41,14 +41,43 @@ const LaunchRequestHandler = {
 
         let record = await database().get(appId(requestEnvelope)); // global attributes
         if(!record || !record.attributes){
-          const Model = database();
-          let attributes = {};
-          attributes.launchCount = 0;
-          record = new Model({id: appId(requestEnvelope), attributes: attributes});
+            const Model = database();
+            let attributes = {};
+            attributes.launchCount = 0;
+            record = new Model({id: appId(requestEnvelope), attributes: attributes});
         }
         console.log(JSON.stringify(record));
         record.attributes.launchCount++;
         const speechText = `Welcome to the <say-as interpret-as="ordinal">` + record.attributes.launchCount + '</say-as> global launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
+        await record.save();
+        return handlerInput.responseBuilder
+            .speak(speechText)
+            .reprompt(speechText)
+            .getResponse();
+    }
+};*/
+
+const LaunchRequestHandler = {
+    canHandle(handlerInput) {
+        return handlerInput.requestEnvelope.request.type === 'LaunchRequest';
+    },
+    async handle(handlerInput) {
+        const { requestEnvelope } = handlerInput;
+
+        let record = await database().get(userId(requestEnvelope)); // local attributes
+        if(!record || !record.attributes){
+            const Model = database();
+            let attributes = {};
+            attributes.launches = [];
+            attributes.launches.push(Date.now());
+            record = new Model({id: userId(requestEnvelope), attributes: attributes});
+        } else {
+            if(!record.attributes.launches)
+                record.attributes.launches = [];
+            record.attributes.launches.push(Date.now());
+        }
+        console.log(JSON.stringify(record));
+        const speechText = `Welcome to the <say-as interpret-as="ordinal">` + record.attributes.launches.length + '</say-as> launch of global persistence demo. You can tell me a key value pair, with a four digit key and a country as value. For example you can say, assign Australia to <say-as interpret-as="digits">1234</say-as>. You can also just say, register pair, get value or delete key';
         await record.save();
         return handlerInput.responseBuilder
             .speak(speechText)
@@ -103,18 +132,16 @@ const SetAttributeIntentHandler = {
         let speechText;
         if (key && value && intent.confirmationStatus !== 'DENIED') {
             let record = await database().get(userId(requestEnvelope)); // local attributes
-            if(!record || !record.attributes){
+            if (!record || !record.attributes) {
                 const Model = database();
                 let attributes = {};
                 attributes[key] = value;
-                record = new Model({id: userId(requestEnvelope), attributes: attributes});
+                record = new Model({ id: userId(requestEnvelope), attributes: attributes });
             } else {
                 record.attributes[key] = value;
             }
             console.log(JSON.stringify(record));
             await record.save();
-
-            
             speechText = 'Key value pair <say-as interpret-as="digits">' + key + '</say-as> ' + value + ', has been saved.';
         } else {
             speechText = 'Ok. I won\'t register this pair.';
@@ -174,7 +201,7 @@ const HelpIntentHandler = {
             .speak(speechText)
             .reprompt(speechText)
             .getResponse();
-    },
+    }
 };
 
 const CancelAndStopIntentHandler = {
@@ -189,7 +216,7 @@ const CancelAndStopIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .getResponse();
-    },
+    }
 };
 
 const FallbackIntentHandler = {
@@ -203,7 +230,7 @@ const FallbackIntentHandler = {
         return handlerInput.responseBuilder
             .speak(speechText)
             .getResponse();
-    },
+    }
 };
 
 const SessionEndedRequestHandler = {
@@ -214,7 +241,7 @@ const SessionEndedRequestHandler = {
         console.log(`Session ended with reason: ${handlerInput.requestEnvelope.request.reason}`);
 
         return handlerInput.responseBuilder.getResponse();
-    },
+    }
 };
 
 const ErrorHandler = {
@@ -225,10 +252,10 @@ const ErrorHandler = {
         console.log(`Error handled: ${error}`);
 
         return handlerInput.responseBuilder
-            .speak('Sorry,there was an error. Please say again.')
+            .speak('Sorry, there was an error. Please say again.')
             .reprompt('Sorry, there was an error. Please say again.')
             .getResponse();
-    },
+    }
 };
 
 const skillBuilder = Alexa.SkillBuilders.custom();
@@ -245,6 +272,4 @@ exports.handler = skillBuilder
         SessionEndedRequestHandler
     )
     .addErrorHandlers(ErrorHandler)
-    //.addRequestInterceptors(interceptors.LoadRequestInterceptor)
-    //.addResponseInterceptors(interceptors.SaveResponseInterceptor)
     .lambda();
